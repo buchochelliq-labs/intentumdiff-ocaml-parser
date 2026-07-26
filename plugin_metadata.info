@@ -1,0 +1,13 @@
+# Bundled parser metadata for the IntentDiff language-info API.
+
+[plugin]
+author = IntentDiff
+plugin_version = 0.1.0
+last_updated = 2026-06-11
+
+[language.ocaml]
+language_name = OCaml
+language_short_name = OCaml
+monaco_language = ocaml
+default_filename = main.ml
+language_file_extensions = .ml,.mli
