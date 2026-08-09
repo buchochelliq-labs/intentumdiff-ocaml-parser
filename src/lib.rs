@@ -1,4 +1,4 @@
-use intentdiff_plugin_sdk::tree::{SemanticNode, SemanticNodeBuilder};
+use intentumdiff_plugin_sdk::tree::{SemanticNode, SemanticNodeBuilder};
 
 wit_bindgen::generate!({
     path: "wit/plugin.wit",
@@ -20,7 +20,7 @@ const PLUGIN_METADATA: &str = include_str!("../plugin_metadata.info");
 struct OcamlParser;
 
 fn language_info_for(ids: Vec<String>) -> Vec<LanguageInfoRecord> {
-    let metadata = intentdiff_plugin_sdk::metadata::parse_plugin_metadata(PLUGIN_METADATA);
+    let metadata = intentumdiff_plugin_sdk::metadata::parse_plugin_metadata(PLUGIN_METADATA);
     ids.into_iter()
         .map(|language_id| {
             let info = metadata.language_or_default(&language_id);
@@ -327,8 +327,8 @@ mod tests {
     #[test]
     fn process_returns_valid_json() {
         let parsed = parse_ocaml(DEFAULT_NEW);
-        intentdiff_plugin_sdk::testing::assert_valid_json(&parsed, LANGUAGE_ID);
-        intentdiff_plugin_sdk::testing::assert_root_node_type(&parsed, ROOT_NODE_TYPE, LANGUAGE_ID);
+        intentumdiff_plugin_sdk::testing::assert_valid_json(&parsed, LANGUAGE_ID);
+        intentumdiff_plugin_sdk::testing::assert_root_node_type(&parsed, ROOT_NODE_TYPE, LANGUAGE_ID);
     }
 
     #[test]
