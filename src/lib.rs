@@ -139,7 +139,7 @@ fn lex(source: &str) -> Vec<Token> {
         }
         let start = i;
         if b == b'(' && bytes.get(i + 1) == Some(&b'*') {
-            i = skip_comment(bytes, i);
+            i = skip_comment(source, i);
             continue;
         }
         i = if b == b'"' {
@@ -208,7 +208,8 @@ fn lex(source: &str) -> Vec<Token> {
     tokens
 }
 
-fn skip_comment(bytes: &[u8], start: usize) -> usize {
+fn skip_comment(source: &str, start: usize) -> usize {
+    let bytes = source.as_bytes();
     let mut depth = 0usize;
     let mut i = start;
     while i < bytes.len() {
@@ -224,6 +225,12 @@ fn skip_comment(bytes: &[u8], start: usize) -> usize {
         } else if bytes[i] == b'"' {
             // OCaml lexes string literals inside comments.
             i = skip_string(bytes, i);
+        } else if let Some(end) = quoted_string_end(source, i) {
+            // ...and quoted strings `{id|...|id}`, whose contents are opaque.
+            i = end;
+        } else if bytes[i..].starts_with(b"'\"'") {
+            // A `'"'` character literal does not open a string.
+            i += 3;
         } else {
             i += 1;
         }
@@ -823,5 +830,32 @@ val save : user -> unit
             "let () = print_endline \"caf\u{e9}\"\n",
             "let () = print_endline \"caf\u{e8}\"\n",
         );
+    }
+
+    #[test]
+    fn quoted_strings_inside_comments_do_not_swallow_code() {
+        // Issue #10: `"` inside `{| ... |}` in a comment is not a string quote.
+        for (old, new) in [
+            (
+                "(* {| \" |} *)\nlet answer = 41\n",
+                "(* {| \" |} *)\nlet answer = 42\n",
+            ),
+            (
+                "(* {id| \" *) |id} *)\nlet answer = 41\n",
+                "(* {id| \" *) |id} *)\nlet answer = 42\n",
+            ),
+        ] {
+            let (a, b) = (root_of(old), root_of(new));
+            let mut la = Vec::new();
+            let mut lb = Vec::new();
+            labels_by_type(&a, "value_body", &mut la);
+            labels_by_type(&b, "value_body", &mut lb);
+            assert_eq!(la, ["41"], "{old:?}");
+            assert_eq!(lb, ["42"], "{new:?}");
+            assert_changed(old, new);
+        }
+        // A `'"'` character literal in a comment is not a string quote either.
+        let root = root_of("(* '\"' *)\nlet answer = 41\n");
+        assert_eq!(find(&root, "value_body").unwrap().label, "41");
     }
 }
